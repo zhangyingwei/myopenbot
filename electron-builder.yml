@@ -127,6 +127,8 @@ win:
   extraResources:
     - from: .openbot-build/voice/runtime
       to: voice/runtime
+    - from: build/openbot-signal.exe
+      to: signal/openbot-signal.exe
     - from: build/remote-desktop-runtime
       to: remote-desktop-runtime
     - from: build/cua-driver/win32/x64
@@ -138,6 +140,7 @@ win:
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
+  include: build/installer.nsh
 linux:
   category: Development
   icon: build/icon-production.png

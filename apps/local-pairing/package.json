@@ -1,0 +1,26 @@
+{
+  "name": "@openbot/local-pairing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/runtime.ts",
+    "./config": "./src/config.ts",
+    "./node": "./src/node.ts"
+  },
+  "scripts": {
+    "dev": "bun --watch src/index.ts",
+    "start": "bun src/index.ts",
+    "typecheck": "bun ../../scripts/type-checker.ts --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@openbot/contracts": "workspace:*",
+    "@openbot/logging": "workspace:*",
+    "effect": "catalog:",
+    "jose": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

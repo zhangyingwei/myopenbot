@@ -143,6 +143,8 @@ export class RemoteTokenService {
   readonly #remoteTicketKey: RemoteJWKSet | null;
   readonly #sessionSecret: Uint8Array;
   readonly #signalId: string | null;
+  readonly #turnDisabled: boolean;
+  readonly #stunUrl: string | null;
   readonly #turnSecret: string;
   readonly #turnHost: (hostId: string) => string;
   readonly #turnPort: number;
@@ -174,7 +176,9 @@ export class RemoteTokenService {
       | "ticketJwks"
       | "ticketJwksUrl"
       | "sessionSecret"
+      | "turnDisabled"
       | "turnSecret"
+      | "stunUrl"
       | "turnHosts"
       | "turnPort"
       | "turnTlsPort"
@@ -212,6 +216,8 @@ export class RemoteTokenService {
     }
     this.#sessionSecret = new TextEncoder().encode(config.sessionSecret);
     this.#signalId = config.signalId;
+    this.#turnDisabled = config.turnDisabled;
+    this.#stunUrl = config.stunUrl;
     this.#turnSecret = config.turnSecret;
     const localTurnHost = config.turnHosts[0] ?? "";
     this.#turnHost = options.turnHost ?? (() => localTurnHost);
@@ -479,6 +485,7 @@ export class RemoteTokenService {
   );
 
   iceServers(claims: RemoteTicketClaims, nowSeconds = Math.floor(Date.now() / 1_000)): IceServer[] {
+    if (this.#turnDisabled) return this.#stunUrl ? [{ urls: this.#stunUrl }] : [];
     const expiration = Math.min(claims.sessionExpiresAt, nowSeconds + SIGNAL_TURN_CREDENTIAL_TTL_SECONDS);
     if (expiration <= nowSeconds) throw new Error("The remote session has expired.");
     const username = `${expiration}:${claims.sessionId}`;

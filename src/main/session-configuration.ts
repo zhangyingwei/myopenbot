@@ -13,6 +13,7 @@ import { inlineContentDisposition } from "./content-disposition";
 import { buildContentSecurityPolicy, readSelfHostedSignalOrigin } from "./content-security-policy";
 import { filePreviewPages } from "./file-preview-pages";
 import { bytesResponse, fileResponse } from "./file-response";
+import { localModeConfig } from "./local-mode";
 import { canAnswerRemoteRanges } from "./remote-attachment-cache";
 import type { RemoteServerManager } from "./remote-server-manager";
 import { parseRemoteAvatarUrl, remoteAttachmentPreviewSize } from "./remote-server-urls";
@@ -21,10 +22,13 @@ import type { TeamStore } from "./team-store";
 import { isTrustedRendererUrl } from "./trusted-renderer";
 
 export function configureContentSecurityPolicy(): void {
+  const localMode = localModeConfig();
   const policy = buildContentSecurityPolicy(
     app.isPackaged,
     process.env.REMOTE_SIGNAL_URL,
     readSelfHostedSignalOrigin(process.env.OPENBOT_AUTH_API_URL, process.env.OPENBOT_REMOTE_SIGNAL_URL),
+    localMode ? process.env.REMOTE_SIGNAL_URL : undefined,
+    localMode ? process.env.OPENBOT_AUTH_API_URL : undefined,
   );
 
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {

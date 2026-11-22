@@ -141,6 +141,7 @@ import {
   setAboveAppsXWayland,
   takeXWaylandRestartMarker,
 } from "./linux-wayland-output";
+import { applyLocalModeEnvironment, localModeConfig, packagedLocalModeRoot } from "./local-mode";
 import { openLocalServerControl, takeLocalServerChildEnvironment } from "./local-server-child";
 import { MacHapticFeedback } from "./mac-haptic-feedback";
 import {
@@ -259,6 +260,7 @@ const commandLineUserDataDirectory = app.commandLine.getSwitchValue("user-data-d
 const developmentProfile = !app.isPackaged ? readDevelopmentProfile(process.env.OPENBOT_DEV_PROFILE) : null;
 const developmentRemoteRole =
   !app.isPackaged &&
+  process.env.OPENBOT_LOCAL_MODE !== "true" &&
   (process.env.OPENBOT_DEV_REMOTE_ROLE === "host" || process.env.OPENBOT_DEV_REMOTE_ROLE === "client")
     ? process.env.OPENBOT_DEV_REMOTE_ROLE
     : null;
@@ -312,6 +314,10 @@ if (commandLineUserDataDirectory) {
   );
 }
 app.setName("OpenBot");
+const localRoot = packagedLocalModeRoot();
+if (localRoot && !commandLineUserDataDirectory) app.setPath("userData", join(localRoot, "Data"));
+const localMode = localModeConfig();
+if (localMode) applyLocalModeEnvironment(localMode);
 const systemTimezone =
   serverMode || hostedServer || localServerChild
     ? applyServerTimezone(join(app.getPath("userData"), SERVER_TIMEZONE_PREFERENCE_FILE), process.env)

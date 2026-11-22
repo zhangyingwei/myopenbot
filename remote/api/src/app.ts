@@ -174,6 +174,7 @@ export function createRemoteApiApp(
     .get("/health/live", () => ({ service: "openbot-remote-api", status: "live", commit: config.sourceCommit }))
     .get("/health/ready", () => ({ service: "openbot-remote-api", status: "ready" }))
     .get("/health/turn", async ({ set }) => {
+      if (config.turnDisabled) return { service: "openbot-turn", status: "disabled" };
       const result = await runtime.runPromise(turnRelays.localProbe.pipe(Effect.result));
       if (Result.isSuccess(result)) return { service: "openbot-turn", status: "ready" };
       set.status = 503;

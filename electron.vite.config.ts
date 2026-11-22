@@ -32,6 +32,7 @@ export default defineConfig({
           "@openbot/brand",
           "@openbot/contracts",
           "@openbot/i18n",
+          "@openbot/local-pairing",
           "@openbot/logging",
           "@openbot/team-client",
           "@openbot/telemetry",

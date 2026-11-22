@@ -95,7 +95,11 @@ const DEFAULT_REMOTE_DEBUGGING_PORTS = {
   "test-client": 9_334,
 } as const;
 
-export function servicesForTarget(target: DevelopmentTarget): DevelopmentService[] {
+export function servicesForTarget(
+  target: DevelopmentTarget,
+  environment: NodeJS.ProcessEnv = process.env,
+): DevelopmentService[] {
+  if (environment.OPENBOT_LOCAL_MODE === "true") return ["app"];
   if (target === "all") return ["api", "remote", "app"];
   if (target === "test-client") return ["api", "remote", "app", "test-client"];
   if (target === "api") return ["api"];
@@ -146,6 +150,9 @@ export function createDevelopmentServiceSpec(
         childEnvironment.OPENBOT_DEV_REMOTE_DEBUGGING_PORT ??
         String(isTestClient ? DEFAULT_REMOTE_DEBUGGING_PORTS["test-client"] : DEFAULT_REMOTE_DEBUGGING_PORTS.app),
       OPENBOT_DEV_REMOTE_ROLE: childEnvironment.OPENBOT_DEV_REMOTE_ROLE ?? (isTestClient ? "client" : "host"),
+      ...(childEnvironment.OPENBOT_LOCAL_MODE === "true"
+        ? { OPENBOT_LOCAL_BUN: childEnvironment.OPENBOT_LOCAL_BUN ?? process.execPath }
+        : {}),
     },
   };
 }

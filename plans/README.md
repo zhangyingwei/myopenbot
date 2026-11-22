@@ -20,6 +20,7 @@ changes, and respect the `STOP` conditions.
 | 010 | Branch a conversation from a message | P1 | L | — | IN PROGRESS |
 | 011 | Upgrades, migrations and team protocol stay safe for the long term | P1 | L | — | IN PROGRESS |
 | 012 | A pool server whose plan ended goes to an archive in B2 | P2 | L | — | IN PROGRESS |
+| 013 | Local intranet mode for the desktop host (fork) | P1 | M | — | IN PROGRESS |
 
 Allowed states: `TODO`, `IN PROGRESS`, `DONE`, `BLOCKED: <reason>`,
 `REJECTED: <reason>`.
@@ -49,6 +50,8 @@ Allowed states: `TODO`, `IN PROGRESS`, `DONE`, `BLOCKED: <reason>`,
   maintainer decision first: whether a revoked member can rejoin with a new
   invite (the plan's default is to refuse). Plan 009 touches the Team API route
   layer only; plan 002 can later remove local password sign-in without a conflict.
+- Plan 013 is for the private local-intranet fork. It is independent of 001-012 and does not change
+  the Team API wire protocol or the phone app. Do not merge it upstream.
 
 ## Run of 2026-10-17
 

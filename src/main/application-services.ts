@@ -297,6 +297,7 @@ import {
   setAboveAppsXWayland,
   usesX11Windows,
 } from "./linux-wayland-output";
+import { localModeConfig } from "./local-mode";
 import { localRoutineFeedDocument } from "./local-routine-calendar";
 import {
   formatLocalServerMembersRequest,
@@ -308,6 +309,7 @@ import {
 } from "./local-server-child";
 import { LOCAL_SERVERS_FILE } from "./local-servers/local-server-registry";
 import { LocalServers, sandboxArguments } from "./local-servers/local-servers";
+import { signInLocalAccount, startLocalServices } from "./local-services";
 import { LocalSignInWindows } from "./local-sign-in-window";
 import { localSkillLearner } from "./local-skill-learner";
 import { LocalSkillLibrary } from "./local-skill-library";
@@ -604,6 +606,7 @@ const TEARDOWN_ORDER = {
   providerLog: 121,
   agentLog: 122,
   accountLog: 123,
+  localServices: 125,
   database: 130,
 } as const;
 
@@ -1124,6 +1127,11 @@ export async function createApplicationServices({
       }),
   });
   teardown.push(TEARDOWN_ORDER.agentDock, "the agent dock", () => agentDock.destroy());
+  const localMode = localModeConfig();
+  if (localMode) {
+    const localServices = await startLocalServices(localMode, logger);
+    teardown.push(TEARDOWN_ORDER.localServices, "the local services", () => localServices.stop());
+  }
   const centralAuth = createCentralAuthManager({
     companySignInBrowser: { open: (url) => shell.openExternal(url), language: () => language },
     confirmSessionAtStart: hostedServer !== null && hostedServer !== undefined,
@@ -1183,7 +1191,7 @@ export async function createApplicationServices({
     homedir(),
     new OpenBotDatabase(app.getPath("userData"), checkDatabaseIntegrityInHost),
     () => agentDefaults.get(),
-    localServerChild?.agentRoot,
+    localServerChild?.agentRoot ?? localMode?.openbotRoot ?? undefined,
   );
   performance.mark("openbot:services.pre-store");
   await runCauseEffect(store.initialize());
@@ -2584,6 +2592,14 @@ export async function createApplicationServices({
     join(app.getPath("userData"), LEGACY_TEAM_STORE_FILE),
   );
   await runCauseEffect(teamStore.initialize());
+  if (localMode) {
+    await signInLocalAccount({
+      centralAuth,
+      teamStore,
+      config: localMode,
+      initialization: centralAuthInitialization,
+    }).catch((error: unknown) => logger.error("The local account did not sign in.", toLogValue(error)));
+  }
   performance.mark("openbot:services.team");
   const machineAlertStore = new MachineAlertPreferenceStore(
     join(app.getPath("userData"), MACHINE_ALERTS_PREFERENCE_FILE),
@@ -3614,7 +3630,7 @@ export async function createApplicationServices({
       : new LocalServers({
           registryPath: join(app.getPath("userData"), LOCAL_SERVERS_FILE),
           userDataRoot: join(app.getPath("userData"), "local-servers"),
-          agentRoot: join(homedir(), "OpenBot", "Servers"),
+          agentRoot: join(localMode?.openbotRoot ?? join(homedir(), "OpenBot"), "Servers"),
           runtimeRoot: providerRuntimesRoot,
           cipher: safeStorageCipher("error.app.macSecureStorageUnavailable"),
           remoteServers,
@@ -3676,6 +3692,9 @@ export async function createApplicationServices({
         remoteServers,
       }),
     );
+  } else if (localMode) {
+    await runCauseEffect(remoteServers.awaitHostDirectory());
+    await runCauseEffect(host.start(true));
   }
   if (localServers) {
     await Effect.runPromise(localServers.initialize());
@@ -3851,6 +3870,7 @@ export async function createApplicationServices({
       (process.env.OPENBOT_HOSTED_SERVER === "1" || (serverModeEnvironment !== null && installationMode === "self")) &&
       existsSync(HOSTED_UPDATE_TRIGGER));
   const updatesEnabled =
+    !localMode &&
     !localServerChild &&
     app.isPackaged &&
     !isNixStoreInstall() &&
@@ -4011,7 +4031,7 @@ export async function createApplicationServices({
   });
   teardown.push(TEARDOWN_ORDER.idleRestart, "the restart when idle", () => idleRestart.dispose());
   const requiredUpdate =
-    app.isPackaged && !localServerChild
+    app.isPackaged && !localMode && !localServerChild
       ? new RequiredUpdate({
           surface: hostedServer || serverModeEnvironment ? "host" : "desktop",
           currentVersion,

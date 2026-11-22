@@ -54,6 +54,25 @@ describe("buildContentSecurityPolicy", () => {
     expect(readSelfHostedSignalOrigin(undefined, undefined)).toBeNull();
   });
 
+  it("adds a private local Signal origin in a packaged local build", () => {
+    const policy = buildContentSecurityPolicy(
+      true,
+      undefined,
+      null,
+      "ws://10.222.0.11:3111/v1/signal",
+      "http://127.0.0.1:3200",
+    );
+    const connect = policy.split("; ").find((directive) => directive.startsWith("connect-src "));
+    const images = policy.split("; ").find((directive) => directive.startsWith("img-src "));
+
+    expect(connect).toContain(" ws://10.222.0.11:3111");
+    expect(connect).toContain(" http://127.0.0.1:3200");
+    expect(images).toContain(" http://127.0.0.1:3200");
+    expect(buildContentSecurityPolicy(true, undefined, null, "ws://signal.example.com/v1/signal")).not.toContain(
+      "ws://signal.example.com",
+    );
+  });
+
   it.each([
     [undefined, "wss://signal.example.com/v1/signal", "OPENBOT_REMOTE_SIGNAL_URL needs OPENBOT_AUTH_API_URL."],
     ["https://api.example.com", "ws://signal.example.com/v1/signal", "must be a wss: URL"],

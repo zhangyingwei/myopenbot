@@ -12,7 +12,9 @@ export interface RemoteApiConfig {
   controlPlaneUrl: string;
   sessionSecret: string;
   authWebhookSecret: string;
+  turnDisabled: boolean;
   turnSecret: string;
+  stunUrl: string | null;
   turnHosts: string[];
   turnPort: number;
   turnTlsPort: number;
@@ -126,6 +128,7 @@ function readDiscordBot(
 
 export function readRemoteApiConfig(environment: Record<string, string | undefined> = process.env): RemoteApiConfig {
   const tlsDisabled = environment.REMOTE_TLS_DISABLED === "true";
+  const turnDisabled = environment.REMOTE_TURN_DISABLED === "true";
   const ticketJwks = optional(environment.REMOTE_TICKET_PUBLIC_KEYS ?? environment.REMOTE_TICKET_PUBLIC_JWKS);
   const ticketJwksUrl = optional(environment.REMOTE_TICKET_JWKS_URL);
   if (!ticketJwks && !ticketJwksUrl)
@@ -142,8 +145,12 @@ export function readRemoteApiConfig(environment: Record<string, string | undefin
     controlPlaneUrl: required(environment.REMOTE_CONTROL_PLANE_URL, "REMOTE_CONTROL_PLANE_URL"),
     sessionSecret: strongSecret(environment.REMOTE_SESSION_SECRET, "REMOTE_SESSION_SECRET"),
     authWebhookSecret: strongSecret(environment.REMOTE_AUTH_WEBHOOK_SECRET, "REMOTE_AUTH_WEBHOOK_SECRET"),
-    turnSecret: strongSecret(environment.TURN_SHARED_SECRET, "TURN_SHARED_SECRET"),
-    turnHosts: readTurnHosts(required(environment.TURN_HOST, "TURN_HOST"), environment.TURN_EXTRA_HOSTS),
+    turnDisabled,
+    stunUrl: turnDisabled ? localStunUrl(environment) : null,
+    turnSecret: turnDisabled ? "" : strongSecret(environment.TURN_SHARED_SECRET, "TURN_SHARED_SECRET"),
+    turnHosts: turnDisabled
+      ? []
+      : readTurnHosts(required(environment.TURN_HOST, "TURN_HOST"), environment.TURN_EXTRA_HOSTS),
     turnPort: positiveInteger(environment.TURN_PORT, 3478),
     turnTlsPort: positiveInteger(environment.TURN_TLS_PORT, 5349),
     metricsToken: optional(environment.REMOTE_METRICS_TOKEN),
@@ -163,6 +170,18 @@ export function readRemoteApiConfig(environment: Record<string, string | undefin
     signalId: readSignalId(environment.SIGNAL_ID),
     entry: readEntryConfig(environment),
   };
+}
+
+function localStunUrl(environment: Record<string, string | undefined>): string {
+  const configured = optional(environment.REMOTE_STUN_URL);
+  if (configured) {
+    if (!/^stuns?:[A-Za-z0-9.-]+:[0-9]{1,5}$/u.test(configured)) {
+      throw new Error("REMOTE_STUN_URL must be a stun or stuns URL.");
+    }
+    return configured;
+  }
+  const host = optional(environment.REMOTE_SIGNAL_HOST) ?? "127.0.0.1";
+  return `stun:${host === "0.0.0.0" || host === "::" ? "127.0.0.1" : host}:3478`;
 }
 
 function readGitHubWebhookSecret(value: string | undefined): string | null {

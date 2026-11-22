@@ -58,7 +58,7 @@ import {
   type HostedSiteDeleteResult,
 } from "@openbot/ui/features/settings/stores/hosted-sites-store";
 import { useText } from "@openbot/ui/text";
-import { createEffect, createMemo, createSignal, For, onCleanup, Show, untrack } from "solid-js";
+import { createEffect, createMemo, createSignal, For, Show, untrack } from "solid-js";
 import { actionToast } from "../../action-toast";
 import { type ServerBrowserProfilesOptions, ServerBrowserProfilesPanel } from "../browser/ServerBrowserProfilesPanel";
 import type { CrmHost } from "../crm/crm-port";
@@ -298,6 +298,7 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
   const [busy, setBusy] = createSignal<string | null>(null);
   const [modalElement, setModalElement] = createSignal<HTMLElement | undefined>();
   const [toastHeight, setToastHeight] = createSignal(0);
+  const [toastElement, setToastElement] = createSignal<HTMLElement>();
   let syncedServerId = "";
 
   const local = () => props.server.kind === "local";
@@ -517,15 +518,19 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
       element?.style.setProperty("--settings-modal-floating-space", `${height}px`);
     },
   );
-  function measureToast(element: HTMLElement): void {
-    const observer = new ResizeObserver(() => setToastHeight(element.offsetHeight));
-    observer.observe(element);
-    setToastHeight(element.offsetHeight);
-    onCleanup(() => {
-      observer.disconnect();
-      setToastHeight(0);
-    });
-  }
+  createEffect(
+    () => toastElement(),
+    (element) => {
+      if (!element) return;
+      const observer = new ResizeObserver(() => setToastHeight(element.offsetHeight));
+      observer.observe(element);
+      setToastHeight(element.offsetHeight);
+      return () => {
+        observer.disconnect();
+        setToastHeight(0);
+      };
+    },
+  );
   const saveBarDocked = () => section() === "general" && general.identityDirty();
 
   createEffect(
@@ -649,7 +654,7 @@ export function ServerSettingsModal(props: ServerSettingsModalProps) {
         floatingContent={
           <Show when={props.loadError && (section() === "general" || section() === "members")}>
             <Alert
-              ref={measureToast}
+              ref={setToastElement}
               class="server-settings-error-toast"
               data-with-save-bar={saveBarDocked() ? "" : undefined}
               tone="danger"

@@ -63,6 +63,8 @@
   ${if} ${PATH} != ""
     !insertmacro openBotHolds ${PATH} "$PROFILE\OpenBot" ${OUT}
     !insertmacro openBotHolds ${PATH} "$APPDATA\OpenBot" ${OUT}
+    !insertmacro openBotHolds ${PATH} "D:\OpenBot" ${OUT}
+    !insertmacro openBotHolds ${PATH} "D:\OpenBot\Data" ${OUT}
   ${endIf}
   Pop $R9
   Pop $R8
@@ -106,10 +108,12 @@
       StrCpy $openBotDataFolderInstall "$PROFILE\OpenBot"
     ${elseIf} ${FileExists} "$APPDATA\OpenBot\${APP_EXECUTABLE_FILENAME}"
       StrCpy $openBotDataFolderInstall "$APPDATA\OpenBot"
+    ${elseIf} ${FileExists} "D:\OpenBot\${APP_EXECUTABLE_FILENAME}"
+      StrCpy $openBotDataFolderInstall "D:\OpenBot"
     ${endIf}
     !insertmacro openBotHoldsUserData $INSTDIR $0
     ${if} $0 == "1"
-      StrCpy $INSTDIR "$LocalAppData\Programs\${APP_FILENAME}"
+      StrCpy $INSTDIR "D:\OpenBot\App"
     ${endIf}
   !macroend
 
@@ -307,4 +311,13 @@
     Pop $0
     Abort
   FunctionEnd
+!macroend
+
+!macro preInit
+  SetRegView 64
+  WriteRegExpandStr HKLM "${INSTALL_REGISTRY_KEY}" InstallLocation "D:\OpenBot\App"
+  WriteRegExpandStr HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation "D:\OpenBot\App"
+  SetRegView 32
+  WriteRegExpandStr HKLM "${INSTALL_REGISTRY_KEY}" InstallLocation "D:\OpenBot\App"
+  WriteRegExpandStr HKCU "${INSTALL_REGISTRY_KEY}" InstallLocation "D:\OpenBot\App"
 !macroend
