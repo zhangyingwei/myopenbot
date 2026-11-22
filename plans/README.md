@@ -21,6 +21,7 @@ changes, and respect the `STOP` conditions.
 | 011 | Upgrades, migrations and team protocol stay safe for the long term | P1 | L | — | IN PROGRESS |
 | 012 | A pool server whose plan ended goes to an archive in B2 | P2 | L | — | IN PROGRESS |
 | 013 | Local intranet mode for the desktop host (fork) | P1 | M | — | IN PROGRESS |
+| 014 | Browser web client on the local host (fork) | P2 | M | 013 | PLANNED |
 
 Allowed states: `TODO`, `IN PROGRESS`, `DONE`, `BLOCKED: <reason>`,
 `REJECTED: <reason>`.
@@ -52,6 +53,8 @@ Allowed states: `TODO`, `IN PROGRESS`, `DONE`, `BLOCKED: <reason>`,
   layer only; plan 002 can later remove local password sign-in without a conflict.
 - Plan 013 is for the private local-intranet fork. It is independent of 001-012 and does not change
   the Team API wire protocol or the phone app. Do not merge it upstream.
+- Plan 014 extends plan 013 with the browser web client on the same host. It is for the fork only and
+  does not change the Team API wire protocol or the phone app. Do not merge it upstream.
 
 ## Run of 2026-10-17
 
