@@ -700,6 +700,7 @@ export class LocalPairingService {
           (item) =>
             item.hostId === hostId &&
             item.userId === userId &&
+            item.authSessionHash === authSessionHash &&
             item.endedAt === null &&
             item.expiresAt > now &&
             hasActiveAuthSession(state, item.authSessionHash),

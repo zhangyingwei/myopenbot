@@ -183,6 +183,21 @@ try {
   check("the ticket has a signal URL", textField(ticket, "signalUrl").startsWith("ws://"));
   check("the ticket carries a token", textField(ticket, "ticket").length > 20);
 
+  const secondSessionResponse = await call("/api/browser/session");
+  const secondCookie = (secondSessionResponse.headers.get("set-cookie") ?? "").split(";")[0] ?? "";
+  function secondBrowser(path: string, init: RequestInit = {}): Promise<Response> {
+    const headers = new Headers(init.headers);
+    headers.set("cookie", secondCookie);
+    return call(path, { ...init, headers });
+  }
+  const secondStarted = await secondBrowser("/api/browser/v2/remote/sessions", {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-openbot-browser": "1" },
+    body: JSON.stringify({ hostId: "host-local" }),
+  });
+  const secondSessionId = textField(await secondStarted.json(), "sessionId");
+  check("a second client gets its own remote session", secondSessionId !== sessionId);
+
   const sessions = await (await browser("/api/browser/v1/me/sessions")).json();
   const accountSessions = objectList(sessions, "sessions");
   check(
@@ -196,6 +211,16 @@ try {
     body: "{}",
   });
   expect(ended.status, 200, "the browser ends the remote session");
+
+  const secondTicket = await secondBrowser(
+    `/api/browser/v2/remote/sessions/${encodeURIComponent(secondSessionId)}/ticket`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-openbot-browser": "1" },
+      body: JSON.stringify({ clientPublicKey: devicePublicKey }),
+    },
+  );
+  expect(secondTicket.status, 200, "ending one session keeps another client connected");
 
   const profile = await browser("/api/browser/v1/me/profile", {
     method: "PATCH",
