@@ -63,6 +63,7 @@ export function localPairingConfig(config: LocalModeConfig): LocalPairingConfig 
     signalPort: config.signalPort,
     publicApiUrl: `http://${config.host}:${config.apiPort}`,
     publicSignalUrl: `ws://${config.host}:${config.signalPort}/v1/signal`,
+    webRoot: localWebRoot(),
     marketplaceBaseUrl: readMarketplaceBaseUrl(
       process.env.OPENBOT_LOCAL_MARKETPLACE_URL?.trim() || "https://api.openbot.run",
     ),
@@ -72,6 +73,13 @@ export function localPairingConfig(config: LocalModeConfig): LocalPairingConfig 
     name: config.name,
     logLevel: "info",
   };
+}
+
+function localWebRoot(): string | null {
+  const override = process.env.OPENBOT_LOCAL_WEB_ROOT?.trim();
+  if (override) return override;
+  if (app.isPackaged) return join(process.resourcesPath, "web");
+  return join(app.getAppPath(), "apps", "local-web", "dist");
 }
 
 function readLocalModeConfig(): LocalModeConfig | null {

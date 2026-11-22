@@ -3,11 +3,13 @@ import { mobileFeaturesOff } from "@openbot/contracts/mobile-features";
 import { type DynamicRecord, isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import type { Logger } from "@openbot/logging";
 import { Effect } from "effect";
+import { handleBrowserRequest } from "./browser-api";
 import type { LocalPairingConfig } from "./config";
 import { LocalPairingError } from "./errors";
 import type { LocalPairingService, MobileDeviceIdentity, RegistrationInput, ResumeClaims } from "./service";
 import { hashToken } from "./state";
 import { verifyServiceRequest } from "./tickets";
+import { serveLocalWeb } from "./web";
 
 const MAX_BODY_BYTES = 1_000_000;
 const UUID_V4_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
@@ -57,6 +59,10 @@ async function route(request: Request, options: LocalPairingHandlerOptions): Pro
 
   if (method === "GET" && path === "/health/live") return json({ status: "ok" });
   if (method === "GET" && path === "/.well-known/jwks.json") return json(service.jwks());
+  if (path === "/app" || path.startsWith("/app/")) return serveLocalWeb(request, config.webRoot);
+  if (path === "/api/browser" || path.startsWith("/api/browser/")) {
+    return handleBrowserRequest(request, path.slice("/api/browser".length).replace(/^\/+/u, ""), service);
+  }
   if (method === "GET" && path === "/v1/mobile/features") {
     return json({ features: mobileFeaturesOff(), latestVersion: null, minimumVersion: null });
   }

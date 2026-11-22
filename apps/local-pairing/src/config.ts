@@ -13,6 +13,7 @@ export interface LocalPairingConfig {
   signalPort: number;
   publicApiUrl: string;
   publicSignalUrl: string;
+  webRoot: string | null;
   marketplaceBaseUrl: string | null;
   authWebhookSecret: string | null;
   userId: string;
@@ -59,6 +60,7 @@ export function readLocalPairingConfig(environment: Environment = process.env): 
   const marketplaceBaseUrl = readMarketplaceBaseUrl(
     environment.LOCAL_PAIRING_MARKETPLACE_URL ?? readText(file.marketplaceBaseUrl) ?? "https://api.openbot.run",
   );
+  const webRoot = environment.LOCAL_PAIRING_WEB_ROOT?.trim() || readText(file.webRoot) || null;
   return {
     dataDir,
     statePath,
@@ -67,6 +69,7 @@ export function readLocalPairingConfig(environment: Environment = process.env): 
     signalPort,
     publicApiUrl,
     publicSignalUrl,
+    webRoot,
     marketplaceBaseUrl,
     authWebhookSecret,
     userId,

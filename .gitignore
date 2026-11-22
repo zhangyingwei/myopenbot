@@ -49,6 +49,7 @@ index-*.css
 /build/grok/
 /build/remote-desktop-runtime/
 /build/remote-desktop-release/
+/build/openbot-signal.exe
 Bots
 /Agents/
 !apps/mobile/src/features/bots/

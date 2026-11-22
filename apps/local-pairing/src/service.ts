@@ -269,6 +269,27 @@ export class LocalPairingService {
     (operation) => operation,
   );
 
+  readonly openBrowserSession = Effect.fn("LocalPairing.openBrowserSession")(
+    function* (this: LocalPairingService) {
+      const now = Date.now();
+      const sessionId = randomIdentifier();
+      const sessionToken = randomToken();
+      const user = yield* this.#store.update((state) => {
+        state.desktopSessions.push({
+          sessionId,
+          name: "Browser",
+          tokenHash: hashToken(sessionToken),
+          connectedAt: now,
+          lastActiveAt: now,
+          revokedAt: null,
+        });
+        return userView(stateUser(state));
+      });
+      return { sessionToken, sessionId, user };
+    },
+    (operation) => operation,
+  );
+
   readonly logout = Effect.fn("LocalPairing.logout")(
     function* (this: LocalPairingService, token: string) {
       const tokenHash = hashToken(token);

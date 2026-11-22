@@ -1,0 +1,28 @@
+{
+  "name": "@openbot/local-web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite",
+    "typecheck": "bun ../../scripts/type-checker.ts --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@openbot/contracts": "workspace:*",
+    "@openbot/i18n": "workspace:*",
+    "@openbot/team-client": "workspace:*",
+    "@openbot/telemetry": "workspace:*",
+    "@openbot/ui": "workspace:*",
+    "@solidjs/web": "catalog:",
+    "solid-js": "2.0.0"
+  },
+  "devDependencies": {
+    "@solidjs/vite-plugin": "catalog:",
+    "@tailwindcss/vite": "catalog:",
+    "@types/node": "catalog:",
+    "tailwindcss": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:"
+  }
+}

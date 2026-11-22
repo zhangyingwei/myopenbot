@@ -39,6 +39,8 @@ asarUnpack:
   - node_modules/effect/**/*
   - node_modules/@koromix/koffi-*/**/*
 extraResources:
+  - from: apps/local-web/dist
+    to: web
   - from: resources/managed-skills
     to: managed-skills
   - from: resources/plugin-catalog
