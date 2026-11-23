@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/runtime.ts",
     "./config": "./src/config.ts",
-    "./node": "./src/node.ts"
+    "./node": "./src/node.ts",
+    "./stun": "./src/stun.ts"
   },
   "scripts": {
     "dev": "bun --watch src/index.ts",

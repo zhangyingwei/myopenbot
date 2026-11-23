@@ -1,3 +1,4 @@
+import { createSocket } from "node:dgram";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
@@ -5,6 +6,7 @@ import { isDynamicRecord, isString } from "@openbot/contracts/runtime-values";
 import { createOpenBotLogger } from "@openbot/logging";
 import type { LocalPairingConfig } from "../apps/local-pairing/src/config";
 import { createLocalPairingRuntime } from "../apps/local-pairing/src/runtime";
+import { startLocalStunServer } from "../apps/local-pairing/src/stun";
 
 const ORIGIN = "http://10.222.0.11:3200";
 const failures: string[] = [];
@@ -232,12 +234,53 @@ try {
   const hosting = await (await browser("/api/browser/v2/hosting/servers")).json();
   expect(booleanField(hosting, "available"), false, "hosted servers stay off in local mode");
 
+  const stun = await startLocalStunServer({ host: "127.0.0.1", port: 3479 });
+  try {
+    const binding = await stunBinding("127.0.0.1", 3479);
+    check("the local STUN server answers a binding request", binding.ok);
+    expect(binding.address, "127.0.0.1", "the STUN reply mirrors the client address");
+  } finally {
+    await stun.close();
+  }
+
   writeReport();
 } catch (error) {
   failures.push(error instanceof Error ? error.message : String(error));
   writeReport();
 } finally {
   rmSync(workspace, { recursive: true, force: true });
+}
+
+interface StunBindingResult {
+  ok: boolean;
+  address: string | null;
+}
+
+function stunBinding(host: string, port: number): Promise<StunBindingResult> {
+  return new Promise((resolve) => {
+    const socket = createSocket("udp4");
+    const finish = (result: StunBindingResult): void => {
+      socket.close();
+      resolve(result);
+    };
+    const timer = setTimeout(() => finish({ ok: false, address: null }), 2000);
+    socket.on("message", (message: Buffer) => {
+      clearTimeout(timer);
+      if (message.length < 32 || message.readUInt16BE(0) !== 0x0101) {
+        finish({ ok: false, address: null });
+        return;
+      }
+      const value = message.subarray(28, 32);
+      const cookie = Buffer.from([0x21, 0x12, 0xa4, 0x42]);
+      const address = [0, 1, 2, 3].map((index) => (value[index] ?? 0) ^ (cookie[index] ?? 0)).join(".");
+      finish({ ok: true, address });
+    });
+    const request = Buffer.alloc(20);
+    request.writeUInt16BE(0x0001, 0);
+    request.writeUInt16BE(0, 2);
+    request.writeUInt32BE(0x2112_a442, 4);
+    socket.send(request, port, host);
+  });
 }
 
 function writeReport(): void {

@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import type { CentralAuthState } from "@openbot/contracts/ipc";
 import { createLocalPairingRuntime } from "@openbot/local-pairing";
 import { closeLocalPairingServer, startLocalPairingServer } from "@openbot/local-pairing/node";
+import { type LocalStunServer, startLocalStunServer } from "@openbot/local-pairing/stun";
 import type { Logger } from "@openbot/logging";
 import { Effect } from "effect";
 import { app } from "electron";
@@ -38,10 +39,17 @@ export async function startLocalServices(config: LocalModeConfig, logger: Logger
     }
   }
   let signal: ChildProcess | null = null;
+  let stun: LocalStunServer | null = null;
+  try {
+    stun = await startLocalStunServer({ port: stunPort(config.stunUrl) });
+  } catch (error) {
+    report("The local STUN server did not start", error);
+  }
   try {
     signal = await startSignal(config, runtime.service.jwks(), logger);
   } catch (error) {
     await Promise.all(servers.map(closeLocalPairingServer));
+    await stun?.close();
     throw error;
   }
   let stopping = false;
@@ -51,6 +59,7 @@ export async function startLocalServices(config: LocalModeConfig, logger: Logger
       if (stopping) return;
       stopping = true;
       await Promise.all(servers.map(closeLocalPairingServer));
+      await stun?.close();
       if (signal && signal.exitCode === null) {
         signal.kill();
         await waitForExit(signal, 5_000);
@@ -82,6 +91,15 @@ export async function signInLocalAccount(options: {
   if (verified.status !== "signed_in") throw new Error("The local account sign-in did not finish.");
   await Effect.runPromise(teamStore.activateAccount(verified.user));
   if (!teamStore.configured) await Effect.runPromise(teamStore.configureWithAccount("OpenBot", verified.user));
+}
+
+function stunPort(url: string): number {
+  try {
+    const port = Number(new URL(url).port);
+    return Number.isSafeInteger(port) && port > 0 ? port : 3478;
+  } catch {
+    return 3478;
+  }
 }
 
 async function startSignal(config: LocalModeConfig, publicJwks: unknown, logger: Logger): Promise<ChildProcess> {
